@@ -1,0 +1,115 @@
+https://openvinotoolkit.github.io/training_extensions/latest/guide/get_started/installation.html
+
+https://docs.docker.com/engine/install/ubuntu/
+도커 설치법
+
+도커 허브 / 조건 검색
+https://hub.docker.com/_/ubuntu/tags
+
+도커파일 가져다놓은 dir에 명령어 실행하면됨
+명령어
+docker build -t ubuntu:kcci_ai .
+dockerfile 의 리스트 패키치 우루루루루 설치한다
+
+-------
+파이썬 버젼 낮추려고 도커로 환경 다시 하나 설정하는거
+------------
+도커 이미지 확인하는 명령어
+sudo docker images
+
+카드 있나 확인 명령어
+ls -l /dev/dri/
+
+도커 실행 명령어
+sudo docker run --name ubuntu02 --device /dev/dri/card1 --device /dev/dri/card2 --device /dev/dri/renderD128 --device /dev/dri/renderD129 --shm-size=8g -it ubuntu:kcci_ai /bin/bash
+
+도커 실행하고나서
+우분투 에서 아크 드라이버 설치
+https://dgpu-docs.intel.com/driver/client/overview.html#installing-client-gpus-on-ubuntu-desktop-22-04-lts
+
+도커 가상환경 나가기
+exit 
+
+sudo docker ps 로 실행중인지 확인하고
+안되있으면 
+sudo docker start ubuntu02 로 도커 가동
+sudo docker ps 로 도커 가동중인지 확인
+
+################################
+이걸로 실행
+sudo docker exec -it ubuntu02 /bin/bash
+su user01
+cd
+여기까지가 기본명령어
+#################################
+
+sudo docker stop ubuntu02
+sudo docker remove ubuntu02
+
+sudo docker commit 3a290cf92281 ubuntu_init
+sudo docker images
+
+유저추가하기
+런 한 상태에서
+cd (아무것도 없음)
+adduser user01
+비번 입력하고 다 엔터
+su user01 로 변경
+
+루트인 상태에서 
+sudo vi /etc/sudoers 수정하기
+esc 누른 상태에서 : 누르고 :wq! 눌러서 vi 탈출(저장됨)
+
+su user01
+
+cd 눌러서 루트 폴더 나오면 ~$ 인지 확인한다
+
+sudo apt update로 동작하는지 확인한다
+
+---------------------------------
+docker ps -a 리스트 다 보여줌
+
+-------------------------------------
+기본 명령어
+otx train --task MULTI_CLASS_CLS --data_root data/flower_photos
+							  # 경로수정
+otx train --task MULTI_CLASS_CLS --data_root data/data_ox
+#####
+워크스페이스 위치에서 해야됨.
+
+
+
+아에 도커 밖으로 나와서
+-> docker commit ubuntu02 ubuntu:otx 로 세팅한 상태 클론하기
+
+docker images로 한번 확인해보기
+
+# 클래스로만 확인하기
+otx find --task MULTI_CLASS_CLS
+# 할 수 있는거 다보기
+otx find
+
+# 모델 복사 명령어
+# 학습한 모델 글로벌로 가져오기
+docker cp ubuntu02:/home/user01/worskspace/otx-workspace ./
+글로벌 터미널에서 복사하고싶은 폴더 경로로 터미널 열고 복사
+
+
+---------------------------------------------------------------
+
+object Detection model
+
+https://openvinotoolkit.github.io/training_extensions/latest/guide/tutorials/base/how_to_train/detection.html
+
+
+
+디텍션 트레이닝 명령어
+
+otx train --config /home/user01/worskspace/training_extensions/src/otx/recipe/detection/atss_mobilenetv2_tile.yaml --data_root export-coco --work_dir otx-workspace --max_epochs 30
+
+욜로모델로 실행
+otx train --config /home/user01/worskspace/training_extensions/src/otx/recipe/detection/yolox_x.yaml --data_root export-coco --work_dir otx-workspace --max_epochs 30
+
+
+/home/user01/worskspace/training_extensions/src/otx/recipe/detection/yolox_x.yaml   
+
