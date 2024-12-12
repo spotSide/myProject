@@ -1,1 +1,4 @@
 https://openvinotoolkit.github.io/training_extensions/latest/guide/get_started/installation.html
+
+
+https://universe.roboflow.com/education-oqzdo/convenience234/browse?queryText=&pageSize=50&startingIndex=0&browseQuery=true
