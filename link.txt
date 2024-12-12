@@ -1,0 +1,1 @@
+https://openvinotoolkit.github.io/training_extensions/latest/guide/get_started/installation.html
