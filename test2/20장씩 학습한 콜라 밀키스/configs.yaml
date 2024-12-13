@@ -1,0 +1,273 @@
+data_root: /home/intel/otx_run/train/testcan
+work_dir: /home/intel/otx_run/train/otx-workspace
+callback_monitor: val/map_50
+disable_infer_num_classes: false
+engine:
+  task: DETECTION
+  device: auto
+  num_devices: 1
+data:
+  task: DETECTION
+  data_format: coco_instances
+  train_subset:
+    batch_size: 8
+    subset_name: train
+    transforms:
+    - class_path: otx.core.data.transform_libs.torchvision.MinIoURandomCrop
+    - class_path: otx.core.data.transform_libs.torchvision.Resize
+      init_args:
+        scale: $(input_size)
+        transform_bbox: true
+    - class_path: otx.core.data.transform_libs.torchvision.PhotoMetricDistortion
+      enable: false
+    - class_path: otx.core.data.transform_libs.torchvision.RandomAffine
+      enable: false
+    - class_path: otx.core.data.transform_libs.torchvision.RandomFlip
+      init_args:
+        prob: 0.5
+        is_numpy_to_tvtensor: true
+    - class_path: torchvision.transforms.v2.RandomVerticalFlip
+      enable: false
+    - class_path: torchvision.transforms.v2.GaussianBlur
+      enable: false
+      init_args:
+        kernel_size: 5
+    - class_path: torchvision.transforms.v2.ToDtype
+      init_args:
+        dtype: ${as_torch_dtype:torch.float32}
+    - class_path: torchvision.transforms.v2.Normalize
+      init_args:
+        mean:
+        - 0.0
+        - 0.0
+        - 0.0
+        std:
+        - 255.0
+        - 255.0
+        - 255.0
+    - class_path: torchvision.transforms.v2.GaussianNoise
+      enable: false
+    transform_lib_type: TORCHVISION
+    num_workers: 2
+    sampler:
+      class_path: otx.algo.samplers.balanced_sampler.BalancedSampler
+      init_args: {}
+    to_tv_image: false
+  val_subset:
+    batch_size: 8
+    subset_name: val
+    transforms:
+    - class_path: otx.core.data.transform_libs.torchvision.Resize
+      init_args:
+        scale: $(input_size)
+        is_numpy_to_tvtensor: true
+    - class_path: torchvision.transforms.v2.ToDtype
+      init_args:
+        dtype: ${as_torch_dtype:torch.float32}
+    - class_path: torchvision.transforms.v2.Normalize
+      init_args:
+        mean:
+        - 0.0
+        - 0.0
+        - 0.0
+        std:
+        - 255.0
+        - 255.0
+        - 255.0
+    transform_lib_type: TORCHVISION
+    num_workers: 2
+    sampler:
+      class_path: torch.utils.data.RandomSampler
+      init_args: {}
+    to_tv_image: false
+  test_subset:
+    batch_size: 8
+    subset_name: test
+    transforms:
+    - class_path: otx.core.data.transform_libs.torchvision.Resize
+      init_args:
+        scale: $(input_size)
+        is_numpy_to_tvtensor: true
+    - class_path: torchvision.transforms.v2.ToDtype
+      init_args:
+        dtype: ${as_torch_dtype:torch.float32}
+    - class_path: torchvision.transforms.v2.Normalize
+      init_args:
+        mean:
+        - 0.0
+        - 0.0
+        - 0.0
+        std:
+        - 255.0
+        - 255.0
+        - 255.0
+    transform_lib_type: TORCHVISION
+    num_workers: 2
+    sampler:
+      class_path: torch.utils.data.RandomSampler
+      init_args: {}
+    to_tv_image: false
+  unlabeled_subset:
+    batch_size: 0
+    subset_name: unlabeled
+    transforms: {}
+    transform_lib_type: TORCHVISION
+    num_workers: 2
+    sampler:
+      class_path: torch.utils.data.RandomSampler
+      init_args: {}
+    to_tv_image: true
+    data_format: image_dir
+  tile_config:
+    enable_tiler: false
+    enable_adaptive_tiling: true
+    tile_size:
+    - 400
+    - 400
+    overlap: 0.2
+    iou_threshold: 0.45
+    max_num_instances: 1500
+    object_tile_ratio: 0.03
+    sampling_ratio: 1.0
+    with_full_img: false
+  vpm_config:
+    use_bbox: false
+    use_point: false
+  mem_cache_size: 1GB
+  image_color_channel: RGB
+  stack_images: true
+  include_polygons: false
+  ignore_index: 255
+  unannotated_items_ratio: 0.0
+  auto_num_workers: false
+  input_size:
+  - 800
+  - 992
+  input_size_multiplier: 1
+checkpoint: /home/intel/otx_run/train/otx-workspace/.latest/train/checkpoints/epoch_014.ckpt
+export_format: OPENVINO
+export_precision: FP32
+explain: false
+export_demo_package: false
+max_epochs: 200
+deterministic: false
+precision: 16
+callbacks:
+- class_path: otx.algo.callbacks.adaptive_early_stopping.EarlyStoppingWithWarmup
+  init_args:
+    monitor: val/map_50
+    min_delta: 0.001
+    patience: 10
+    verbose: false
+    mode: max
+    strict: true
+    check_finite: true
+    check_on_train_epoch_end: false
+    log_rank_zero_only: false
+    warmup_iters: 30
+    warmup_epochs: 3
+- class_path: lightning.pytorch.callbacks.RichProgressBar
+  init_args:
+    refresh_rate: 1
+    leave: false
+    theme:
+      description: white
+      progress_bar: '#6206E0'
+      progress_bar_finished: '#6206E0'
+      progress_bar_pulse: '#6206E0'
+      batch_progress: white
+      time: grey54
+      processing_speed: grey70
+      metrics: white
+      metrics_text_delimiter: ' '
+      metrics_format: .3f
+- class_path: lightning.pytorch.callbacks.ModelCheckpoint
+  init_args:
+    dirpath: ''
+    filename: checkpoints/epoch_{epoch:03d}
+    monitor: val/map_50
+    verbose: false
+    save_last: true
+    save_top_k: 1
+    save_weights_only: false
+    mode: max
+    auto_insert_metric_name: false
+    enable_version_counter: true
+- class_path: otx.algo.callbacks.iteration_timer.IterationTimer
+  init_args:
+    prog_bar: true
+    on_step: false
+    on_epoch: true
+- class_path: otx.algo.callbacks.gpu_mem_monitor.GPUMemMonitor
+- class_path: lightning.pytorch.callbacks.RichModelSummary
+  init_args:
+    max_depth: 1
+- class_path: lightning.pytorch.callbacks.LearningRateMonitor
+  init_args:
+    logging_interval: epoch
+    log_momentum: true
+    log_weight_decay: false
+- class_path: otx.algo.callbacks.adaptive_train_scheduling.AdaptiveTrainScheduling
+  init_args:
+    max_interval: 5
+    decay: -0.025
+    min_earlystop_patience: 3
+    min_lrschedule_patience: 3
+logger:
+- class_path: lightning.pytorch.loggers.CSVLogger
+  init_args:
+    save_dir: ''
+    name: csv/
+    prefix: ''
+    flush_logs_every_n_steps: 100
+- class_path: lightning.pytorch.loggers.TensorBoardLogger
+  init_args:
+    save_dir: ''
+    name: tensorboard/
+    log_graph: false
+    default_hp_metric: true
+    prefix: ''
+    comment: ''
+    max_queue: 10
+    flush_secs: 120
+    filename_suffix: ''
+    write_to_disk: true
+    comet_config:
+      disabled: true
+resume: false
+run_hpo: false
+hpo_config:
+  mode: max
+  num_workers: 1
+  expected_time_ratio: 4
+  acceptable_additional_time_ratio: 1.0
+  reduction_factor: 3
+  asynchronous_bracket: true
+  asynchronous_sha: false
+  adapt_bs_search_space_max_val: None
+adaptive_bs: None
+strategy: auto
+num_nodes: 1
+fast_dev_run: false
+min_epochs: 1
+max_steps: -1
+overfit_batches: 0.0
+check_val_every_n_epoch: 1
+num_sanity_val_steps: 0
+accumulate_grad_batches: 1
+gradient_clip_val: 35.0
+inference_mode: true
+use_distributed_sampler: true
+detect_anomaly: false
+barebones: false
+sync_batchnorm: false
+reload_dataloaders_every_n_epochs: 0
+model:
+  class_path: otx.algo.detection.atss.ATSS
+  init_args:
+    model_name: atss_mobilenetv2
+    input_size:
+    - 800
+    - 992
+    metric: otx.core.metrics.fmeasure._mean_ap_f_measure_callable
+    torch_compile: false
